@@ -10,7 +10,7 @@ product_bp = Blueprint('product_bp', __name__)
 
 # --- 🔍 PUBLIC ROUTES ---
 
-@product_bp.route("/api/product/<id>", methods=["GET"])
+@product_bp.route("/<id>", methods=["GET"])
 def get_single_product(id):
     try:
         if not ObjectId.is_valid(id):
@@ -27,15 +27,25 @@ def get_single_product(id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@product_bp.route("/api/products", methods=["GET"])
+@product_bp.route("/", methods=["GET"])
 def get_products():
+    # 1. Uske logic se Search parameter uthao
+    query_param = request.args.get('q') 
     category_name = request.args.get('category')
     limit = int(request.args.get('limit', 20))
     exclude_id = request.args.get('exclude') 
     
+    # 2. AGAR USER KUCH SEARCH KAR RAHA HAI (?q=shoes)
+    if query_param:
+        from repositories.products_repository import get_products_by_search
+        products = get_products_by_search(query_param)
+        return jsonify(products)
+
+    # 3. BAAKI AAPKA PURANA LOGIC (Category aur Normal Fetch)
     query = {"isActive": True}
     if category_name:
         query["category"] = {"$regex": f"^{category_name}$", "$options": "i"}
+    
     if exclude_id:
         try:
             query["_id"] = {"$ne": ObjectId(exclude_id)}
@@ -44,6 +54,35 @@ def get_products():
 
     products = get_all_products(query_filter=query, limit=limit)
     return jsonify(products)
+
+
+@product_bp.route("/latest", methods=["GET"])
+def get_latest_products():
+    try:
+        # 1. Use $sample to get 8 truly random products from the database
+        # This ensures you get a mix of categories on every refresh
+        pipeline = [
+            {"$match": {"isActive": True}}, # Only show active products
+            {"$sample": {"size": 8}}        # Pick 8 random ones
+        ]
+        
+        products_cursor = mongo.db.products.aggregate(pipeline)
+        products = list(products_cursor)
+
+        if not products:
+            return jsonify([]), 200 # Return empty list if no products exist
+
+        # 2. Use your existing 'format_product' helper 
+        # This converts ObjectId to string and ensures frontend compatibility
+        formatted_products = [format_product(p) for p in products]
+
+        return jsonify(formatted_products), 200
+
+    except Exception as e:
+        print(f"Error in /latest: {e}") # Log error for debugging
+        return jsonify({"error": "Internal Server Error"}), 500
+    
+
 
 
 # --- 🏪 SELLER SPECIFIC ROUTES ---

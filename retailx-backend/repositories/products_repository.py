@@ -1,9 +1,9 @@
 from extensions import mongo
 from bson import ObjectId
+import re
 
 def format_product(p):
-    if not p:
-        return None
+    if not p: return None
     return {
         "id": str(p.get("_id")),
         "name": p.get("name"),
@@ -26,7 +26,8 @@ def format_product(p):
         "images": p.get("images", [])
     }
 
-def get_all_products(query_filter=None, limit=20):
+# --- APKA FLEXIBLE LOGIC ---
+def get_all_products(query_filter=None, limit=50):
     query = query_filter if query_filter else {"isActive": True}
     products = mongo.db.products.find(query).limit(limit)
     return [format_product(p) for p in products]
@@ -37,3 +38,22 @@ def get_product_by_id(product_id):
         return format_product(product)
     except:
         return None
+
+# --- USKE EXTRA FEATURES (Cleaned Up) ---
+def get_products_by_category(category_name):
+    regex = re.compile(f"^{category_name}$", re.IGNORECASE)
+    # Hum apna hi get_all_products call kar rahe hain yahan (Reusability!)
+    return get_all_products(query_filter={"category": regex, "isActive": True})
+
+def get_products_by_search(search_query):
+    regex = re.compile(search_query, re.IGNORECASE)
+    search_filter = {
+        "isActive": True,
+        "$or": [
+            {"name": regex},
+            {"category": regex},
+            {"brand": regex},
+            {"tags": regex}
+        ]
+    }
+    return get_all_products(query_filter=search_filter)

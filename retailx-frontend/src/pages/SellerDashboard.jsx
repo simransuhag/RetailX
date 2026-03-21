@@ -664,39 +664,87 @@ const ProfileView = ({ seller }) => {
                 </div>
             </div>
 
-            {/* Information Grid */}
+{/* Information Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-4">
-                    <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-widest border-b pb-2">Business Info</h3>
-                    <DetailField label="Store Name" value={formData.storeName} editable={editMode} onChange={(e) => setFormData({...formData, storeName: e.target.value})} />
+                    <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-widest border-b pb-2">
+                        Business Info
+                    </h3>
+                    
+                    <DetailField 
+                        label="Store Name" 
+                        value={formData.storeName} 
+                        editable={editMode} 
+                        onChange={(e) => setFormData({...formData, storeName: e.target.value})} 
+                    />
                     
                     <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">Registration ID <Lock size={10}/></label>
-                        <p className="p-4 bg-slate-50 text-slate-400 rounded-2xl text-sm font-bold border border-dashed italic cursor-not-allowed">{formData.registrationId}</p>
+                        <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
+                            Registration ID <Lock size={10}/>
+                        </label>
+                        <p className="p-4 bg-slate-50 text-slate-400 rounded-2xl text-sm font-bold border border-dashed italic cursor-not-allowed">
+                            {formData.registrationId}
+                        </p>
                     </div>
 
-                    <DetailField label="Business Type" value={formData.businessType} editable={editMode} onChange={(e) => setFormData({...formData, businessType: e.target.value})} />
+                    <DetailField 
+                        label="Business Type" 
+                        value={formData.businessType} 
+                        editable={editMode} 
+                        onChange={(e) => setFormData({...formData, businessType: e.target.value})} 
+                    />
                 </div>
 
                 <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-4">
-                    <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-widest border-b pb-2">Compliance & Contact</h3>
-                    <DetailField label="GSTIN Number" value={formData.gstin} editable={editMode} onChange={(e) => setFormData({...formData, gstin: e.target.value})} />
-                    <DetailField label="Contact Number" value={formData.contactNumber} editable={editMode} onChange={(e) => setFormData({...formData, contactNumber: e.target.value})} />
-                    <DetailField label="Store Address" value={formData.businessAddress} editable={editMode} onChange={(e) => setFormData({...formData, businessAddress: e.target.value})} />
+                    <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-widest border-b pb-2">
+                        Compliance & Contact
+                    </h3>
+                    
+                    <DetailField 
+                        label="Shop Number" 
+                        value={formData.gstin} 
+                        editable={editMode} 
+                        onChange={(e) => setFormData({...formData, gstin: e.target.value.toUpperCase()})} 
+                    />
+                    
+                    <DetailField 
+                        label="Contact Number" 
+                        value={formData.contactNumber} 
+                        editable={editMode} 
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            // Sirf numbers allow honge aur max length 10
+                            if (/^\d*$/.test(val) && val.length <= 10) {
+                                setFormData({...formData, contactNumber: val});
+                            }
+                        }} 
+                    />
+                    
+                    <DetailField 
+                        label="Store Address" 
+                        value={formData.businessAddress} 
+                        editable={editMode} 
+                        onChange={(e) => setFormData({...formData, businessAddress: e.target.value})} 
+                    />
                 </div>
             </div>
         </div>
     );
 };
 
+// DetailField Component (Isme validation logic integrated hai)
 const DetailField = ({ label, value, editable, onChange, placeholder }) => (
     <div className="space-y-1">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            {label}
+        </label>
         {editable ? (
             <input 
                 value={value} 
                 onChange={onChange} 
                 placeholder={placeholder}
+                // Phone number ke liye extra safety
+                maxLength={label === "Contact Number" ? 10 : undefined}
                 className="w-full p-4 bg-slate-50 border-2 border-emerald-100 focus:border-emerald-500 rounded-2xl text-sm font-bold outline-none transition-all" 
             />
         ) : (
@@ -707,13 +755,14 @@ const DetailField = ({ label, value, editable, onChange, placeholder }) => (
     </div>
 );
 
-
-
-const OrdersView = () => (
-  <div className="py-20 bg-white rounded-[3rem] border-2 border-dashed flex flex-col items-center">
-    <ShoppingCart className="text-slate-100 mb-4" size={48} />
-    <p className="font-black text-slate-300 uppercase tracking-widest text-xs">Waiting for customer traffic...</p>
-  </div>
+// OrdersView Component (For display in other parts of the dashboard)
+export const OrdersView = () => (
+    <div className="py-20 bg-white rounded-[3rem] border-2 border-dashed flex flex-col items-center">
+        <ShoppingCart className="text-slate-100 mb-4" size={48} />
+        <p className="font-black text-slate-300 uppercase tracking-widest text-xs">
+            Waiting for customer traffic...
+        </p>
+    </div>
 );
 
 export default SellerDashboard;

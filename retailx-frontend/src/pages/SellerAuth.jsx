@@ -19,8 +19,10 @@ export default function SellerAuth() {
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (error) setError(""); // Typing karte hi error gayab ho jaye
+    // GSTIN ko hamesha uppercase mein convert karne ke liye check
+    const value = e.target.name === "registrationId" ? e.target.value.toUpperCase() : e.target.value;
+    setFormData({ ...formData, [e.target.name]: value });
+    if (error) setError(""); 
   };
 
   const handleSubmit = async (e) => {
@@ -28,8 +30,45 @@ export default function SellerAuth() {
     setLoading(true);
     setError("");
 
+    // --- VALIDATION LOGIC START ---
+if (mode === "register") {
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+  
+  // 1. Store Name: Starts with a letter [a-zA-Z], then can have anything else
+  const storeNameRegex = /^[a-zA-Z]/;
+
+  // 2. Email: Must end with @gmail.com
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+
+  if (!emailRegex.test(formData.email)) {
+    setError("Registration is only allowed with a @gmail.com email address.");
+    setLoading(false);
+    return;
+  }
+
+  if (!passwordRegex.test(formData.password)) {
+    setError("Password is weak! It must contain 8 characters, one Capital letter, one Small letter, one digit and one Special character.");
+    setLoading(false);
+    return; 
+  }
+
+  if (!storeNameRegex.test(formData.storeName)) {
+    setError("Store Name must start with a letter (A-Z). It cannot start with a number or symbol.");
+    setLoading(false);
+    return;
+  }
+
+  if (!gstinRegex.test(formData.registrationId)) {
+    setError("GSTIN format is wrong! Enter 15-digit GST number (Ex: 07AAAAA0000A1Z5).");
+    setLoading(false);
+    return;
+  }
+}
+// --- VALIDATION LOGIC END ---
+
     try {
-      const url = `http://localhost:5000/api/seller/${mode}`; // Dynamic clean URL
+      const url = `http://localhost:5000/api/seller/${mode}`; 
       
       const res = await fetch(url, {
         method: "POST",
@@ -79,7 +118,7 @@ export default function SellerAuth() {
             icon={Mail}
             name="email"
             type="email"
-            placeholder="seller@business.com"
+            placeholder="seller@gmail.com"
             value={formData.email}
             onChange={handleChange}
           />
@@ -105,23 +144,32 @@ export default function SellerAuth() {
           </div>
 
           {mode === "register" && (
-            <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
-              <Input
-                icon={Store}
-                name="storeName"
-                placeholder="Business/Store Name"
-                value={formData.storeName}
-                onChange={handleChange}
-              />
-              <Input
-                icon={ShieldCheck}
-                name="registrationId"
-                placeholder="GSTIN or Shop ID"
-                value={formData.registrationId}
-                onChange={handleChange}
-              />
-            </div>
-          )}
+  <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+    <div>
+      <Input
+        icon={Store}
+        name="storeName"
+        placeholder="Business/Store Name"
+        value={formData.storeName}
+        onChange={handleChange}
+      />
+      {/* Real-time hint for Store Name */}
+      <p className="text-[10px] text-slate-400 mt-1 ml-2 font-medium">
+        * Must start with a letter (A-Z)
+      </p>
+    </div>
+
+    <div>
+      <Input
+        icon={ShieldCheck}
+        name="registrationId"
+        placeholder="GSTIN (15 Digits)"
+        value={formData.registrationId}
+        onChange={handleChange}
+      />
+    </div>
+  </div>
+)}
 
           <Button
             type="submit"

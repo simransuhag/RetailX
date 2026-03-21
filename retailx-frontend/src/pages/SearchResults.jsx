@@ -1,16 +1,15 @@
-
-import { useSearchParams, Link, useNavigate } from "react-router-dom"; // useNavigate add kiya
-import { useEffect, useState, useMemo, useContext } from "react"; // useContext add kiya
-import { CartContext } from "../App"; // CartContext import kiya
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo, useContext } from "react"; 
+import { CartContext } from "../App"; 
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
-
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q");
-  const navigate = useNavigate(); // Navigation ke liye
-  const { addToCart } = useContext(CartContext); // Global function use karne ke liye
+  const category = searchParams.get("category"); // Category catch kiya
+  const navigate = useNavigate(); 
+  const { addToCart } = useContext(CartContext); 
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,37 +19,51 @@ export default function SearchResults() {
   const [maxPrice, setMaxPrice] = useState(100000); 
   const [visibleCount, setVisibleCount] = useState(8);
 
+  // --- LOGIC: Fetch results from Backend ---
   useEffect(() => {
     const fetchResults = async () => {
+      // Agar dono empty hain toh search mat karo
+      if (!query && !category) return;
+
       setLoading(true);
       try {
-        const response = await fetch(`http://127.0.0.1:5000/api/search/?q=${query}`);
+        const params = new URLSearchParams();
+        
+        /** * Hum backend ko ek hi 'q' bhejenge. 
+         * Backend ab isi 'q' ko name, category, subcategory, aur tags mein search karega.
+         */
+        const searchTerm = query || category;
+        params.append("q", searchTerm);
+
+        const response = await fetch(`http://127.0.0.1:5000/api/search?${params.toString()}`);
         const data = await response.json();
+        
         setProducts(data);
-        setVisibleCount(8);
+        setVisibleCount(8); // Reset count on new search
       } catch (error) {
         console.error("Search error:", error);
       } finally {
         setLoading(false);
       }
     };
-    if (query) fetchResults();
-  }, [query]);
+
+    fetchResults();
+  }, [query, category]);
 
   // --- LOGIC: Add to Cart and Redirect ---
   const handleAddToCart = (p) => {
     const productForCart = {
       id: p.id,
       name: p.name,
-      price: Number(p.finalPrice), // Cart page 'price' expect karta hai
-      originalPrice: Number( p.price),
-      image: p.images && p.images.length > 0 ? p.images[0] : "https://via.placeholder.com/200",
-      seller: "RetailX Seller", // Dummy seller
+      price: Number(p.finalPrice),
+      originalPrice: Number(p.price),
+      image: p.imageURL || p.images?.[0] || "https://via.placeholder.com/200",
+      seller: "RetailX Seller",
       brand: p.brand
     };
     
-    addToCart(productForCart); // Global state update
-    navigate("/cart"); // Cart page par bhejo
+    addToCart(productForCart); 
+    navigate("/cart"); 
   };
 
   const brands = useMemo(() => {
@@ -78,8 +91,10 @@ export default function SearchResults() {
       <div className="pt-24 max-w-7xl mx-auto px-6 pb-12">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          {/* Dynamic Heading based on Search or Category */}
           <h1 className="text-xl md:text-2xl font-semibold text-gray-800">
-            Results for "{query}" <span className="text-gray-400 font-normal">({filteredProducts.length} items)</span>
+            {query ? `Results for "${query}"` : `Category: ${category}`} 
+            <span className="text-gray-400 font-normal"> ({filteredProducts.length} items)</span>
           </h1>
 
           <div className="flex flex-wrap gap-4 items-center">
@@ -125,11 +140,11 @@ export default function SearchResults() {
                     <Link to={`/product/${p.id}`} className="block">
                       <div className="h-56 bg-white p-4 flex items-center justify-center relative">
                         <img 
-                          src={p.images && p.images.length > 0 ? p.images[0] : "https://via.placeholder.com/200"} 
+                          src={p.imageURL || p.images?.[0] || "https://via.placeholder.com/200"} 
                           alt={p.name} 
                           className="h-full object-contain"
                         />
-                        {p.rating && (
+                        {p.rating > 0 && (
                           <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
                             {p.rating} ★
                           </div>
@@ -150,7 +165,7 @@ export default function SearchResults() {
                     </Link>
 
                     <div className="px-4 pb-4">
-                      {/* --- Update: OnClick call handleAddToCart --- */}
+                      {/* Global Add to Cart functionality */}
                       <button 
                         onClick={() => handleAddToCart(p)}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
@@ -162,7 +177,7 @@ export default function SearchResults() {
                 ))
               ) : (
                 <div className="col-span-full text-center py-20">
-                  <p className="text-gray-500 text-lg">Hume "{query}" ke liye kuch nahi mila.</p>
+                  <p className="text-gray-500 text-lg">Hume "{query || category}" ke liye kuch nahi mila.</p>
                 </div>
               )}
             </div>

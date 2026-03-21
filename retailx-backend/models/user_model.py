@@ -1,5 +1,6 @@
 from extensions import mongo
 
+
 class User:
 
     @staticmethod
@@ -12,12 +13,39 @@ class User:
             "name": name,
             "email": email,
             "password": password,
-            "preferences": []   # stored in same user document
+            "contact": {},
+            "addresses": [],
+            "preferences": [],
+            "wishlist": []
         })
 
     @staticmethod
-    def save_preferences(email, categories):
+    def save_contact_and_address(email, contact, address):
         return mongo.db.users.update_one(
             {"email": email},
-            {"$set": {"preferences": categories}}
+            {
+                "$set": {
+                    "contact": contact
+                },
+                "$push": {
+                    "addresses": address
+                }
+            }
+        )
+
+    @staticmethod
+    def save_preferences(email, preferences):
+        return mongo.db.users.update_one(
+            {"email": email},
+            {
+                "$set": {
+                    "preferences": preferences
+                }
+            }
+        )
+    @staticmethod
+    def clear_wishlist(email):
+        return mongo.db.users.update_one(
+            {"email": email},
+            {"$set": {"wishlist": []}}
         )
