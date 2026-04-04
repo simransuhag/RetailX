@@ -19,9 +19,7 @@ export default function RetailXHome() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-// --- Replace your fetchProducts function with this ---
-
-useEffect(() => {
+  useEffect(() => {
   const fetchProducts = async () => {
     try {
       setLoading(true);

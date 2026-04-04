@@ -4,7 +4,7 @@ from extensions import mongo
 from bson import ObjectId
 from datetime import datetime
 
-user_bp = Blueprint("user", __name__)
+user_bp = Blueprint("user", __name__, url_prefix="/api/user")
 
 # 1️⃣ GET DASHBOARD DATA
 @user_bp.route("/dashboard-data", methods=["GET"])
@@ -15,7 +15,17 @@ def dashboard_data():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    orders = list(mongo.db.orders.find({"email": email}).sort("created_at", -1))
+    # Purana: orders = list(mongo.db.orders.find({"email": email}))
+
+# Naya (Jyada safe): 
+    orders = list(mongo.db.orders.find({
+        "$or": [
+            {"email": email}, 
+            {"address.email": email}
+        ]
+    }).sort("created_at", -1))
+
+    print(f"DEBUG: Found {len(orders)} orders for {email}") # Terminal mein check karo kitne mile
 
     user["_id"] = str(user["_id"])
     for order in orders:

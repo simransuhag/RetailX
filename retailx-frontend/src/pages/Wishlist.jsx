@@ -5,7 +5,8 @@ import { Trash2, Heart, ShoppingBag, ArrowUpRight, CheckCircle2, AlertTriangle, 
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
-import { CartContext } from "../App"; 
+import { CartContext } from "../context/CartContext";
+
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -174,7 +175,7 @@ const Wishlist = () => {
               <div className="p-10 rounded-full bg-zinc-50 border border-zinc-100"><Heart size={40} className="text-zinc-200" strokeWidth={1} /></div>
             </div>
             <p className="font-serif italic text-2xl text-zinc-400 mb-10">Your collection is empty.</p>
-            <button onClick={() => navigate("/CustomerDashboard")} className="px-12 py-5 bg-black text-white text-[10px] font-bold uppercase tracking-[0.4em] rounded-full hover:bg-emerald-600 transition-all duration-500">
+            <button onClick={() => navigate("/customer-dashboard")} className="px-12 py-5 bg-black text-white text-[10px] font-bold uppercase tracking-[0.4em] rounded-full hover:bg-emerald-600 transition-all duration-500">
               Start Discovering
             </button>
           </motion.div>

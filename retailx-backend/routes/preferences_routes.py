@@ -1,6 +1,16 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from extensions import mongo
+import pymongo
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# MongoDB connection
+MONGO_URI = os.getenv("MONGO_URI") or "mongodb://localhost:27017"
+client = pymongo.MongoClient(MONGO_URI)
+db = client["retailxDB"]
+users_collection = db["users"]
 
 preferences_bp = Blueprint("preferences", __name__, url_prefix="/api")
 
@@ -13,9 +23,9 @@ def save_preferences():
     if len(categories) < 3:
         return jsonify({"message": "Select at least 3 categories"}), 400
 
-    email = get_jwt_identity() 
+    email = get_jwt_identity()  # string from JWT
 
-    mongo.db.users.update_one(
+    users_collection.update_one(
         {"email": email},
         {"$set": {"preferences": categories}}
     )

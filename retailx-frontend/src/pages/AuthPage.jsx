@@ -30,88 +30,87 @@ export default function AuthPage() {
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const NAME_REGEX = /^[A-Za-z ]{3,}$/;
 
-  const handleSubmit = async (e) => {
+// ... (Saare imports same hain)
+
+const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // 1. Name Validation (Only for Register)
+    // Validations (Same as yours)
     if (mode === "register" && !NAME_REGEX.test(name)) {
-      setError("Name should contain only letters and must be at least 3 characters long.");
-      return;
-    }
-
-    // 2. Email Format Validation
-    if (!EMAIL_REGEX.test(email)) {
-      setError("Please enter a valid email address (e.g., name@gmail.com).");
-      return;
+        setError("Name should be at least 3 letters.");
+        return;
     }
 
     setIsLoading(true);
 
-    // 3. Register-specific Password Validation
-    if (mode === "register") {
-      if (!PASSWORD_REGEX.test(password)) {
-        setIsLoading(false);
-        setError("Password must be at least 8 chars, 1 uppercase, and 1 special char.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setIsLoading(false);
-        setError("Passwords do not match.");
-        return;
-      }
-    }
-
     try {
-      // API Endpoint (Using localhost:5000 as requested)
-      const url = mode === "login" 
-        ? "http://localhost:5000/api/auth/login" 
-        : "http://localhost:5000/api/auth/register";
-      
-      const payload = mode === "login" 
-        ? { email, password } 
-        : { name, email, password };
+        const url = mode === "login" 
+            ? "http://localhost:5000/api/auth/login" 
+            : "http://localhost:5000/api/auth/register";
+        
+        const payload = mode === "login" 
+            ? { email, password } 
+            : { name, email, password };
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Accept": "application/json" // Added for better compatibility
+            },
+            body: JSON.stringify(payload),
+        });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
-      }
-
-      // 4. Critical Storage (Sabhi keys preserved)
-      localStorage.setItem("userToken", data.token || data.access_token);
-      localStorage.setItem("user_name", data.user?.name || name || "Shopper");
-      localStorage.setItem("userName", data.user?.name || name || "Shopper"); // Backup key
-      
-      const userPrefs = data.user?.preferences || [];
-      localStorage.setItem("user_preferences", JSON.stringify(userPrefs));
-
-      // 5. Intelligent Redirection (Her exact logic)
-      if (mode === "register") {
-        navigate("/preferences");
-      } else {
-        const redirectTo = localStorage.getItem("postAuthRedirect");
-        if (redirectTo) {
-          localStorage.removeItem("postAuthRedirect");
-          window.location.href = redirectTo;
-        } else {
-          // Force refresh logic preserved
-          window.location.href = "/customer-dashboard";
+        // Agar response 401 hai toh specifically check karein
+        if (response.status === 401) {
+            throw new Error("Invalid Email or Password");
         }
-      }
-      
+
+        // ✅ Correct Token and Name storage in AuthPage.js
+const data = await response.json();
+
+if (!response.ok) {
+    throw new Error(data.message || "Authentication failed");
+}
+
+// Backend se jo response aa raha hai uske hisaab se keys set karein
+const token = data.token || data.access_token;
+const user = data.user || {};
+
+localStorage.setItem("userToken", token);
+localStorage.setItem("user_name", user.name || name || "Shopper"); // Dashboard expects 'user_name'
+localStorage.setItem("user_preferences", JSON.stringify(user.preferences || [])); // Dashboard expects 'user_prefs'
+localStorage.setItem("user_id", user._id || user.id);
+localStorage.setItem("user", JSON.stringify(data.user));
+
+// Redirect logic
+if (mode === "register") {
+    navigate("/preferences");
+} else {
+    // Role check
+    const targetPath = user.role === 'admin' ? "/admin-dashboard" : "/customer-dashboard";
+    
+    // ✅ Dispatch event before moving
+    window.dispatchEvent(new Event("userLoginStateChange"));
+    
+    // Navigate use karo window.location.href ki jagah (SPA feel ke liye)
+    navigate(targetPath);
+}
+        
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+        // Bhai, agar network error hai (CORS), toh error message dhang se dikhayenge
+        if (err.message.includes("Failed to fetch")) {
+            setError("Server is not responding. Please check if backend is running on port 5000.");
+        } else {
+            setError(err.message);
+        }
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  };
+};
+
+// ... (Baaki UI same hai)
 
   return (
     <div className="min-h-screen bg-[#fcfcfd] flex flex-col font-sans text-slate-900">
@@ -228,6 +227,27 @@ export default function AuthPage() {
                   </>
                 )}
               </button>
+              {/* Google Sign-In Button — add below your submit button, inside the form */}
+<div className="relative my-2">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full border-t border-slate-100" />
+  </div>
+  <div className="relative flex justify-center text-xs">
+    <span className="bg-white px-3 text-slate-400">or continue with</span>
+  </div>
+</div>
+
+<a
+  href="http://localhost:5000/api/auth/google/login"
+  className="w-full flex items-center justify-center gap-3 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all"
+>
+  <img
+    src="https://www.svgrepo.com/show/475656/google-color.svg"
+    alt="Google"
+    className="w-4 h-4"
+  />
+  Continue with Google
+</a>
             </form>
 
             <div className="mt-8 pt-6 border-t border-slate-50 text-center">

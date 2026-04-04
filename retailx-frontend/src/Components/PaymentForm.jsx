@@ -25,16 +25,17 @@ const PaymentForm = ({ total }) => {
     const { clientSecret } = await res.json();
 
     const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: elements.getElement(CardElement),
-      },
-    });
+  payment_method: {
+    card: elements.getElement(CardElement),
+  },
+});
 
-    if (result.error) {
-      alert(result.error.message);
-    } else if (result.paymentIntent.status === "succeeded") {
-      alert("Payment Successful 🎉");
-    }
+if (result.error) {
+  alert(result.error.message);
+} else if (result.paymentIntent.status === "succeeded") {
+  // ✅ Ab user ko Success page par bhejo
+  window.location.href = "/payment-success"; 
+}
 
     setLoading(false);
   };

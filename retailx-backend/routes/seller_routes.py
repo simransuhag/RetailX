@@ -301,3 +301,40 @@ def update_seller_profile():
     except Exception as e:
         print(f"Update Profile Error: {e}")
         return jsonify({"message": f"Server Error: {str(e)}"}), 500
+    
+# --- 📦 GET SELLER ORDERS ---
+# Final Route: GET /api/seller/orders
+@seller_bp.route("/orders", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_seller_orders():
+    try:
+        current_seller_email = get_jwt_identity()
+        
+        # 1. Wo orders dhoondo jisme kam se kam ek product iss seller ka ho
+        # Query: items list ke andar kisi bhi object ka seller_email match hona chahiye
+        query = {"items": {"$elemMatch": {"seller_email": current_seller_email}}}
+        
+        all_orders = list(mongo.db.orders.find(query).sort("created_at", -1))
+
+        formatted_orders = []
+        for order in all_orders:
+            # 2. Filter: Order mein se sirf wahi items nikaalo jo iss seller ke hain
+            # Kyunki ek order mein multiple sellers ke products ho sakte hain
+            my_items = [item for item in order["items"] if item.get("seller_email") == current_seller_email]
+            
+            if my_items:
+                formatted_orders.append({
+                    "_id": str(order["_id"]),
+                    "customer_email": order.get("email"),
+                    "my_items": my_items,
+                    "status": order.get("status"),
+                    "total_order_value": order.get("total"),
+                    "address": order.get("address"),
+                    "created_at": order.get("created_at")
+                })
+
+        return jsonify(formatted_orders), 200
+    except Exception as e:
+        print(f"Orders Fetch Error: {e}")
+        return jsonify({"message": f"Server Error: {str(e)}"}), 500

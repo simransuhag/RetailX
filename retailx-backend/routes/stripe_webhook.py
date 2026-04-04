@@ -18,6 +18,6 @@ def stripe_webhook():
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         print("✅ PAYMENT VERIFIED:", session["id"])
-        
+        # SAVE ORDER TO DB HERE
 
     return "", 200
