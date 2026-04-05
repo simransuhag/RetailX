@@ -31,3 +31,19 @@ def save_preferences():
     )
 
     return jsonify({"message": "Preferences saved successfully"}), 200
+
+# preferences_routes.py mein add karein
+
+@preferences_bp.route("/categories", methods=["GET"])
+def get_categories():
+    try:
+        # "products" collection se unique "category" field ki values nikalne ke liye .distinct() use karein
+        # Agar aapka collection name alag hai toh use change karein
+        categories = db["products"].distinct("category")
+        
+        # Sort kar dena behtar rehta hai taaki UI clean dikhe
+        categories.sort() 
+        
+        return jsonify(categories), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500

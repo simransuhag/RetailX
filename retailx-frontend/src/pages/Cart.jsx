@@ -18,9 +18,11 @@ const Cart = () => {
   // Calculations
   const currentCartTotal = cartData?.items?.reduce((acc, item) => acc + item.price * item.quantity, 0) || 0;
   const realTimeSpent = (cartData?.spent || 0) + currentCartTotal;
-  const discount = currentCartTotal * 0.20; 
-  const deliveryFee = 15;
-  const finalTotal = currentCartTotal - discount + deliveryFee;
+  // const discount = currentCartTotal * 0.20; 
+  // const deliveryFee = 15;
+  // const finalTotal = currentCartTotal - discount + deliveryFee;
+    const finalTotal = currentCartTotal ;
+
 
   const handleEditBudget = async () => {
     const { value: newBudget } = await Swal.fire({
@@ -35,25 +37,51 @@ const Cart = () => {
 
   if (!cartData || !cartData.items) return null;
 
-  // --- EMPTY CART VIEW ---
-  if (cartData.items.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col bg-white">
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 mt-20">
-          <div className="mb-10 w-full max-w-md border rounded-[20px] p-6">
-            <p className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-widest">Monthly Budget Status</p>
-            <BudgetTracker spent={cartData.spent || 0} limit={cartData.monthlyBudget} />
+  // --- EMPTY CART VIEW (Fixed with Edit Option) ---
+if (cartData.items.length === 0) {
+  return (
+    <div className="min-h-screen flex flex-col bg-white">
+      <Navbar />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 mt-20">
+        
+        {/* --- BUDGET SECTION --- */}
+        <div className="mb-10 w-full max-w-md border rounded-[20px] p-6 bg-slate-50/50">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+              Monthly Budget Status
+            </p>
+            {/* YAHAN SE EDIT TRIGGER HOGA */}
+            <button 
+              onClick={handleEditBudget}
+              className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-tighter"
+            >
+              Edit Limit
+            </button>
           </div>
-          <h1 className="text-5xl font-black uppercase italic tracking-tighter">Your Bag Is Empty</h1>
-          <Link to="/customer-dashboard" className="bg-black text-white px-10 py-4 rounded-full mt-8 flex items-center gap-2 font-medium hover:scale-105 transition-transform">
-            Browse Products <ArrowRight size={20} />
-          </Link>
+          
+          <BudgetTracker 
+            spent={cartData.spent || 0} 
+            limit={cartData.monthlyBudget} 
+            cartTotal={0} // Khali cart hai toh 0
+          />
         </div>
-        <Footer />
+
+        {/* --- EMPTY MESSAGE --- */}
+        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-center">
+          Your Bag Is Empty
+        </h1>
+        
+        <Link 
+          to="/customer-dashboard" 
+          className="bg-black text-white px-10 py-4 rounded-full mt-8 flex items-center gap-2 font-medium hover:scale-105 transition-transform"
+        >
+          Browse Products <ArrowRight size={20} />
+        </Link>
       </div>
-    );
-  }
+      <Footer />
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -137,14 +165,14 @@ const Cart = () => {
                   <span>Subtotal</span>
                   <span className="text-black font-bold">₹{currentCartTotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-lg">
+                {/* <div className="flex justify-between text-lg">
                   <span className="text-gray-500">Discount (-20%)</span>
                   <span className="text-red-500 font-bold">-₹{discount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-gray-500 text-lg">
-                  <span>Delivery Fee</span>
-                  <span className="text-black font-bold">₹{deliveryFee}</span>
-                </div>
+                  {/* <span>Delivery Fee</span> */}
+                  {/* <span className="text-black font-bold">₹{deliveryFee}</span> */}
+                {/* </div> */} 
                 
                 <hr className="border-gray-100 my-4" />
                 

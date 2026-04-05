@@ -1,34 +1,22 @@
 import { useState, useEffect } from "react";
 import { 
-  Users, Package, BarChart3, Tag, LogOut, Bell, Search, Plus, Command, Clock, Trash2, ShoppingBag, CreditCard, CheckCircle, AlertCircle
+  Users, Boxes, Package, BarChart3, Tag, LogOut, Bell, Search, Plus, Command, Clock, Trash2, ShoppingBag, CreditCard, CheckCircle, AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2"; // SweetAlert2 Import
 
 /* --- SHARED API HELPER --- */
 const apiRequest = async (endpoint, method = "GET", body = null) => {
-  try {
-    let token = localStorage.getItem("adminToken")?.replace(/^"(.*)"$/, '$1');
-    const headers = {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    };
-    
-    const config = { method, headers };
-    if (body) config.body = JSON.stringify(body);
-    
-    const res = await fetch(`http://127.0.0.1:5000${endpoint}`, config);
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Backend Error:", errorData);
-      return null;
-    }
-    
-    return await res.json();
-  } catch (error) {
-    console.error("Fetch failed:", error);
-    return null;
-  }
+  let token = localStorage.getItem("adminToken")?.replace(/^"(.*)"$/, '$1');
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json"
+  };
+  const config = { method, headers };
+  if (body) config.body = JSON.stringify(body);
+  
+  const res = await fetch(`http://127.0.0.1:5000${endpoint}`, config);
+  return res.ok ? await res.json() : null;
 };
 
 const getHeaders = () => {
@@ -59,10 +47,18 @@ const ComplaintsView = () => {
     });
 
     if (res) {
-      // UI update instantly without refresh
       setComplaints(complaints.map(c => c._id === id ? { ...c, status: newStatus } : c));
+      // Toast for status update
+      Swal.fire({
+        toast: true,
+        position: 'bottom-end',
+        icon: 'success',
+        title: `Ticket marked as ${newStatus}`,
+        showConfirmButton: false,
+        timer: 2000
+      });
     } else {
-      alert("Status update fail ho gaya!");
+      Swal.fire("Error", "Status update failed!", "error");
     }
   };
 
@@ -131,13 +127,26 @@ const UsersView = () => {
   useEffect(() => { fetchUsers(); }, []);
 
   const handleDelete = async (userId) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/users/${userId}`, {
-        method: "DELETE",
-        headers: getHeaders(),
-      });
-      if (res.ok) setUsers(users.filter((user) => user._id !== userId));
-    }
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this user deletion!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Yes, delete it!"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await fetch(`http://127.0.0.1:5000/api/admin/users/${userId}`, {
+          method: "DELETE",
+          headers: getHeaders(),
+        });
+        if (res.ok) {
+          setUsers(users.filter((user) => user._id !== userId));
+          Swal.fire("Deleted!", "User has been removed.", "success");
+        }
+      }
+    });
   };
 
   return (
@@ -188,7 +197,7 @@ const OrdersView = () => {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xl font-black text-slate-900">${o.total}</p>
+            <p className="text-xl font-black text-slate-900">₹{o.total}</p>
             <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded uppercase tracking-tighter">{o.status}</span>
           </div>
         </div>
@@ -207,13 +216,26 @@ const SellersView = () => {
   useEffect(() => { fetchSellers(); }, []);
 
   const handleDelete = async (id) => {
-    if (window.confirm("Remove this seller?")) {
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/sellers/${id}`, {
-        method: "DELETE",
-        headers: getHeaders(),
-      });
-      if (res.ok) setSellers(sellers.filter(s => s._id !== id));
-    }
+    Swal.fire({
+      title: "Remove this seller?",
+      text: "The store and its products will be hidden.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Yes, remove!"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await fetch(`http://127.0.0.1:5000/api/admin/sellers/${id}`, {
+          method: "DELETE",
+          headers: getHeaders(),
+        });
+        if (res.ok) {
+          setSellers(sellers.filter(s => s._id !== id));
+          Swal.fire("Removed!", "Seller account has been deleted.", "success");
+        }
+      }
+    });
   };
 
   return (
@@ -254,6 +276,7 @@ const InsightsView = () => {
 
   const cards = [
     { label: "Total Users", value: stats.users, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Total Products", value: stats.products, icon: Boxes, color: "text-red-600", bg: "bg-red-50" },
     { label: "Active Sellers", value: stats.sellers, icon: Package, color: "text-purple-600", bg: "bg-purple-50" },
     { label: "Pending Support", value: stats.pending_complaints, icon: Bell, color: "text-red-600", bg: "bg-red-50" },
     { label: "Total Orders", value: stats.orders, icon: ShoppingBag, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -263,7 +286,7 @@ const InsightsView = () => {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {cards.map((card, i) => (
           <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
             <div className={`h-12 w-12 ${card.bg} ${card.color} rounded-2xl flex items-center justify-center mb-4`}><card.icon size={24} /></div>
@@ -300,7 +323,18 @@ const DealsView = () => {
   const submit = async (e) => {
     e.preventDefault();
     const res = await apiRequest("/api/admin_ops/deals", "POST", formData);
-    if (res) { setShowModal(false); loadData(); }
+    if (res) { 
+      setShowModal(false); 
+      loadData();
+      Swal.fire({
+        icon: 'success',
+        title: 'Deal Published!',
+        text: 'The new offer is now active on the platform.',
+        confirmButtonColor: "#10b981"
+      });
+    } else {
+      Swal.fire("Error", "Could not save the deal.", "error");
+    }
   };
 
   return (
@@ -347,8 +381,19 @@ export default function AdminDashboard() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    window.location.href = "/";
+    Swal.fire({
+      title: "Logging out?",
+      text: "See you later, Admin!",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Logout"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("adminToken");
+        window.location.href = "/";
+      }
+    });
   };
 
   const menu = [
